@@ -148,6 +148,56 @@
 
         /* Toast iyileştirme */
         #toast-container > div { pointer-events: auto; }
+
+        /* ── AdSense Reklam Kutusu ── */
+        .mg-ad-box {
+            position: relative;
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid rgba(229, 231, 235, 0.6);
+            border-radius: 20px;
+            padding: 28px 12px 12px;
+            margin-top: 1.5rem;
+            overflow: visible;
+            box-sizing: border-box;
+            min-height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .dark .mg-ad-box {
+            background: #111827;
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+        .mg-ad-box ins.adsbygoogle {
+            display: block !important;
+            width: 300px !important;
+            height: 250px !important;
+        }
+        .mg-ad-label {
+            position: absolute;
+            top: 7px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            background: #ffffff;
+            padding: 2px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(229, 231, 235, 0.8);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 1;
+            font-family: 'Nunito', sans-serif;
+        }
+        .dark .mg-ad-label {
+            background: #111827;
+            border-color: rgba(255, 255, 255, 0.08);
+            color: #475569;
+        }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-900 dark:bg-dark-900 dark:text-gray-100 h-[100dvh] flex overflow-hidden selection:bg-brand-500 selection:text-white transition-colors duration-300">
@@ -286,6 +336,17 @@
                     <h3 class="text-[11px] font-black text-gray-400 uppercase tracking-widest mb-3">Son İzlenenler</h3>
                     <div class="flex gap-3 overflow-x-auto pb-4 custom-scrollbar" id="recent-channels"></div>
                 </div>
+
+                <!-- ── ADSENSE REKLAM KUTUSU — Video Altı ── -->
+                <div class="mg-ad-box" aria-label="Reklam" role="complementary">
+                    <span class="mg-ad-label">Reklam</span>
+                    <ins class="adsbygoogle"
+                         style="display:block;width:300px;height:250px;"
+                         data-ad-client="ca-pub-1880946354382681"
+                         data-ad-slot="1689789138"
+                         data-ad-format="rectangle"></ins>
+                </div>
+
             </div>
         </main>
 
@@ -303,6 +364,17 @@
             </div>
 
             <div class="flex-1 lg:overflow-y-auto p-2 custom-scrollbar" id="channel-list"></div>
+
+            <!-- ── ADSENSE REKLAM KUTUSU — Kanal Listesi Altı ── -->
+            <div class="mg-ad-box" style="margin: 0.5rem 0.5rem 1rem;" aria-label="Reklam" role="complementary">
+                <span class="mg-ad-label">Reklam</span>
+                <ins class="adsbygoogle"
+                     style="display:block;width:300px;height:250px;"
+                     data-ad-client="ca-pub-1880946354382681"
+                     data-ad-slot="1689789138"
+                     data-ad-format="rectangle"></ins>
+            </div>
+
         </aside>
 
     </div>
@@ -1067,5 +1139,23 @@
             else playChannel(channels[0].id);
         }
     </script>
+    <!-- ── Reklam Lazy Push ── -->
+    <script>
+    (function() {
+        function pushAds() {
+            document.querySelectorAll('ins.adsbygoogle').forEach(function(ins) {
+                if (!ins.getAttribute('data-adsbygoogle-status')) {
+                    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+                }
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() { setTimeout(pushAds, 800); });
+        } else {
+            setTimeout(pushAds, 800);
+        }
+    })();
+    </script>
+
 </body>
 </html>
