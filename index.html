@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="tr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MuGöl TV - Premium Web TV</title>
+
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0B0F19">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MuGöl TV">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="icon" href="icons/icon-192.png">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: { 
+                    fontFamily: { sans:['Nunito', 'sans-serif'] },
+                    colors: {
+                        brand: { 50: '#eff6ff', 100: '#dbeafe', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 900: '#1e3a8a' },
+                        dark: { 900: '#0B0F19', 800: '#111827', 700: '#1F2937' }
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                        'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+                        'pop-in': 'popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        'pulse-glow': 'pulseGlow 2s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+                        slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+                        popIn: { '0%': { transform: 'scale(0.9)', opacity: '0' }, '100%': { transform: 'scale(1)', opacity: '1' } },
+                        pulseGlow: { '0%, 100%': { opacity: '1' }, '50%': { opacity: '.6' } }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1880946354382681" crossorigin="anonymous"></script>
+    <script async custom-element="amp-auto-ads" src="https://cdn.ampproject.org/v0/amp-auto-ads-0.1.js"></script>
+
+    <!-- Google Fonts: Nunito -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    
+    <style>
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #374151; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .dark ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+
+        body { -webkit-tap-highlight-color: transparent; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+        :root { --logo-bg: #f9fafb; }
+        .dark { --logo-bg: #0B0F19; }
+
+        .glass-header { background: rgba(255, 255, 255, 0.95); border-bottom: 1px solid rgba(229, 231, 235, 0.5); }
+        .dark .glass-header { background: rgba(11, 15, 25, 0.95); border-bottom: 1px solid rgba(31, 41, 55, 0.5); }
+        
+        @supports (backdrop-filter: blur(8px)) {
+            .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+            .dark .glass-header { background: rgba(11, 15, 25, 0.85); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        }
+
+        .active-channel { 
+            background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(99,102,241,0.08)) !important; 
+            border-color: rgba(59,130,246,0.5) !important; 
+            box-shadow: inset 3px 0 0 0 #3b82f6, 0 2px 8px rgba(59,130,246,0.1);
+        }
+        .dark .active-channel { 
+            background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(99,102,241,0.1)) !important; 
+            border-color: rgba(59,130,246,0.5) !important; 
+        }
+
+        #video-container:-webkit-full-screen { width: 100vw; height: 100vh; border-radius: 0; }
+        #video-container:-moz-full-screen { width: 100vw; height: 100vh; border-radius: 0; }
+        #video-container:fullscreen { width: 100vw; height: 100vh; border-radius: 0; }
+        
+        input[type=range] { accent-color: #3b82f6; height: 6px; border-radius: 4px; outline: none; }
+
+        @keyframes eq { 0%, 100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
+        .eq-bar { width: 3px; height: 12px; background-color: currentColor; border-radius: 2px; transform-origin: bottom; will-change: transform; }
+        .playing .eq-bar { animation: eq 0.8s ease-in-out infinite; }
+        .playing .eq-bar:nth-child(2) { animation-delay: 0.2s; }
+        .playing .eq-bar:nth-child(3) { animation-delay: 0.4s; }
+
+        .modal-open { display: flex !important; animation: fadeIn 0.2s ease-out; }
+        .modal-content-open { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        
+        .channel-card { 
+            transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease; 
+            border: 1px solid transparent; 
+            will-change: transform; 
+        }
+        .channel-card:hover { 
+            transform: translateY(-1px); 
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        }
+        .dark .channel-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        }
+
+        /* Gradient video container glow */
+        #video-container.playing {
+            box-shadow: 0 0 0 1px rgba(59,130,246,0.2), 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        /* Şık info bar */
+        .channel-info-gradient {
+            background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%) !important;
+        }
+        .dark .channel-info-gradient {
+            background: linear-gradient(135deg, #1F2937 0%, #111827 100%) !important;
+        }
+
+        /* Sidebar gradient bottom */
+        #sidebar::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0;
+            height: 80px;
+            background: linear-gradient(to top, white, transparent);
+            pointer-events: none;
+            border-radius: 0 0 0 0;
+        }
+        .dark #sidebar::after {
+            background: linear-gradient(to top, #0B0F19, transparent);
+        }
+
+        /* Logo placeholder */
+        .logo-placeholder {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 900; font-size: 1rem;
+        }
+
+        /* Pulse animation for live badge */
+        @keyframes livePulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(0.95); }
+        }
+        #live-dot:not(.hidden) { animation: livePulse 2s ease-in-out infinite; }
+
+        /* Smooth sidebar */
+        #sidebar { position: fixed; top: 56px; }
+        @media (min-width: 1024px) { #sidebar { position: static; top: auto; } }
+
+        /* Toast iyileştirme */
+        #toast-container > div { pointer-events: auto; }
+
+        /* ── AdSense Reklam Kutusu ── */
+        .mg-ad-box {
+            position: relative;
+            width: 100%;
+            background: #ffffff;
+            border: 1px solid rgba(229, 231, 235, 0.6);
+            border-radius: 16px;
+            padding: 24px 12px 12px;
+            margin-top: 1rem;
+            overflow: hidden;
+            box-sizing: border-box;
+            max-height: 290px;
+            flex-shrink: 0;
+        }
+            min-height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .dark .mg-ad-box {
+            background: #111827;
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+        .mg-ad-box ins.adsbygoogle {
+            display: block !important;
+            width: 300px !important;
+            height: 250px !important;
+        }
+        .mg-ad-label {
+            position: absolute;
+            top: 7px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            background: #ffffff;
+            padding: 2px 10px;
+            border-radius: 20px;
+            border: 1px solid rgba(229, 231, 235, 0.8);
+            white-space: nowrap;
+            pointer-events: none;
+            z-index: 1;
+            font-family: 'Nunito', sans-serif;
+        }
+        .dark .mg-ad-label {
+            background: #111827;
+            border-color: rgba(255, 255, 255, 0.08);
+            color: #475569;
+        }
+        /* Mobil menü: adres çubuğu/gezinme çubuğu yüzünden alt kısım kesilmesin */
+        @media (max-width: 1023px) {
+            #sidebar { height: 100vh; height: 100dvh; bottom: auto; }
+            #sidebar > div:last-child { padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px)); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-dark-900 dark:text-gray-100 h-[100dvh] flex overflow-hidden selection:bg-brand-500 selection:text-white transition-colors duration-300 pt-[56px] lg:pt-0">
+
+    <amp-auto-ads type="adsense" data-ad-client="ca-pub-1880946354382681"></amp-auto-ads>
+
+    <div id="toast-container" class="fixed top-6 right-6 z-[200] flex flex-col gap-3 pointer-events-none"></div>
+
+    <!-- ÜST BANNER -->
+    <div id="top-banner" class="lg:hidden fixed top-0 left-0 right-0 z-[80] flex items-center justify-between px-4 py-2.5 glass-header" style="height:56px;">
+        <button onclick="toggleMobileSidebar()" class="p-2 text-gray-600 dark:text-gray-300 hover:text-brand-500 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+        </button>
+        <div class="flex items-center gap-2 cursor-pointer" onclick="showCategoryScreen()">
+            <img src="logo.png" alt="MuGöl TV" class="h-8 w-auto rounded-lg object-contain" onerror="this.onerror=null; this.outerHTML='<div class=\'w-8 h-8 bg-gradient-to-br from-brand-400 to-indigo-600 rounded-lg flex items-center justify-center text-white font-black text-lg\'>M</div>'">
+            <span class="text-lg font-black text-gray-900 dark:text-white tracking-tight">MuGöl <span class="bg-gradient-to-r from-brand-500 to-indigo-500 bg-clip-text text-transparent">TV</span></span>
+        </div>
+        <div class="w-10 h-10"></div>
+    </div>
+
+
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white dark:bg-dark-800 border-t border-gray-200 dark:border-gray-800 z-50 flex items-center justify-around px-2 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.05)] dark:shadow-none">
+        <button onclick="toggleMobileSidebar()" class="p-2 flex flex-col items-center gap-1 text-gray-500 hover:text-brand-500 dark:text-gray-400 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            <span class="text-[11px] font-bold">Menü</span>
+        </button>
+        <button onclick="showCategoryScreen()" class="p-2 flex flex-col items-center gap-1 text-brand-600 dark:text-brand-400 relative">
+            <div class="absolute -top-3 w-10 h-1 bg-brand-500 rounded-b-full"></div>
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+            <span class="text-[11px] font-bold">Ana Sayfa</span>
+        </button>
+        <button onclick="filterCategory('Favoriler')" class="p-2 flex flex-col items-center gap-1 text-gray-500 hover:text-yellow-500 dark:text-gray-400 transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+            <span class="text-[11px] font-bold">Favoriler</span>
+        </button>
+    </nav>
+
+    <!-- Sol Menü -->
+    <div id="drawer-backdrop" class="fixed inset-0 bg-black/60 z-[60] hidden transition-opacity lg:hidden" onclick="toggleMobileSidebar()"></div>
+    <aside id="sidebar" class="fixed lg:static inset-y-0 left-0 w-64 bg-white dark:bg-dark-900 lg:border-r border-gray-200 dark:border-dark-700 z-[70] transform -translate-x-full lg:translate-x-0 transition-transform duration-300 flex flex-col h-full shadow-2xl lg:shadow-none">
+        
+        <div class="h-20 flex items-center px-6 border-b border-gray-100 dark:border-dark-700/60 shrink-0">
+            <div class="flex items-center gap-3 cursor-pointer group" onclick="showCategoryScreen()">
+                <img src="logo.png" alt="MuGöl TV" class="h-9 w-auto rounded-xl object-contain shadow-sm group-hover:scale-105 transition-transform" onerror="this.onerror=null; this.outerHTML='<div class=\'w-9 h-9 bg-gradient-to-br from-brand-400 to-indigo-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-md\'>M</div>'">
+                <div>
+                    <h1 class="text-2xl font-black text-gray-900 dark:text-white tracking-tight leading-none">MuGöl <span class="bg-gradient-to-r from-brand-500 to-indigo-500 bg-clip-text text-transparent">TV</span></h1>
+                    <p class="text-[10px] text-gray-400 dark:text-gray-500 font-bold tracking-wider uppercase mt-0.5">Web TV Platform</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-1">
+            <div class="text-[10px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 pl-2 mt-2">Kısayollar</div>
+            
+            <button onclick="filterCategory('Tümü')" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors font-bold group cat-btn" data-cat="Tümü">
+                <svg class="w-5 h-5 opacity-70 group-hover:text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                Tüm Kanallar
+            </button>
+            <button onclick="filterCategory('Favoriler')" class="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors font-bold group cat-btn" data-cat="Favoriler">
+                <div class="flex items-center gap-3">
+                    <svg class="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+                    Favorilerim
+                </div>
+                <span id="fav-count" class="text-[10px] font-black bg-gray-200 dark:bg-dark-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded-lg">0</span>
+            </button>
+
+            <div class="w-full h-px bg-gray-200 dark:bg-dark-800 my-3"></div>
+            <div class="text-[10px] font-extrabold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-1.5 pl-2">Kategoriler</div>
+            <ul id="category-list" class="space-y-1"></ul>
+            
+            <div class="w-full h-px bg-gray-200 dark:bg-dark-800 my-3"></div>
+            
+            <!-- Uygulamayı İndir -->
+            <button id="install-btn" onclick="installApp()" class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-white font-black bg-gradient-to-r from-brand-500 to-indigo-500 hover:from-brand-600 hover:to-indigo-600 shadow-md shadow-brand-500/20 active:scale-95 transition-all mb-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4"></path></svg>
+                Uygulamayı İndir
+            </button>
+
+            <!-- Portal Geri -->
+            <a href="https://mugol-portal.github.io" class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors font-bold mb-1" style="text-decoration:none;">
+                <svg class="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                MuGöl Portal
+            </a>
+
+            <!-- Tema -->
+            <button id="theme-toggle" class="w-full flex items-center justify-between px-4 py-3 rounded-2xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors font-bold mb-4">
+                <div class="flex items-center gap-3">
+                    <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                    <span id="theme-text">Karanlık Tema</span>
+                </div>
+                <div class="w-9 h-5 bg-gray-300 dark:bg-brand-500 rounded-full relative transition-colors">
+                    <div class="absolute w-4 h-4 bg-white rounded-full shadow-sm left-0.5 top-0.5 transform transition-transform dark:translate-x-4"></div>
+                </div>
+            </button>
+        </div>
+    </aside>
+
+    <!-- SAĞ TARAF (Video + Liste) -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden bg-gray-100 dark:bg-[#080B13] pb-16 lg:pb-0 w-full h-full">
+        
+        <!-- Video Alanı -->
+        <main class="flex-1 flex flex-col p-3 sm:p-5 lg:p-8 lg:h-full lg:overflow-y-auto custom-scrollbar" id="main-area">
+            
+            <div class="hidden lg:flex items-center justify-between mb-4 lg:mb-6">
+                <div id="clock" class="text-sm font-extrabold text-gray-500 dark:text-gray-400 tracking-tight"></div>
+            </div>
+
+            <!-- KATEGORİ SEÇİM EKRANI (Başlangıç Ekranı) -->
+            <div id="category-screen" class="w-full max-w-5xl mx-auto flex flex-col animate-fade-in">
+                <div class="text-center mb-6 mt-2">
+                    <img src="logo.png" alt="MuGöl TV" class="h-14 w-auto mx-auto mb-4 rounded-2xl object-contain shadow-md" onerror="this.onerror=null; this.outerHTML='<div class=\'w-14 h-14 mx-auto bg-gradient-to-br from-brand-400 to-indigo-600 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-md\'>M</div>'">
+                    <h2 class="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white tracking-tight">Bir Kategori Seçin</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 font-semibold mt-1">İzlemek istediğiniz kategoriyi seçerek kanallara göz atın</p>
+                </div>
+                <div id="category-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 pb-6"></div>
+            </div>
+
+        </main>
+
+        <!-- Sağ Sabit Sidebar Liste -->
+        <aside class="w-full lg:w-[320px] xl:w-[360px] flex flex-col shrink-0 lg:h-full lg:border-l border-gray-200/80 dark:border-dark-700/50 bg-white dark:bg-dark-800 z-10">
+            <div class="p-4 border-b border-gray-100 dark:border-dark-700/50 sticky top-0 bg-white/95 dark:bg-dark-800/95 backdrop-blur-md z-20 shrink-0">
+                <div class="relative">
+                    <input type="text" id="search" placeholder="Kanal ara..." class="w-full bg-gray-50 dark:bg-dark-900/80 border border-gray-200 dark:border-dark-700/50 focus:border-brand-400 dark:focus:border-brand-500/70 text-gray-900 dark:text-white rounded-2xl pl-10 pr-4 py-3 outline-none transition-all font-bold text-sm placeholder-gray-400 focus:ring-2 focus:ring-brand-500/10">
+                    <svg class="w-4 h-4 absolute left-4 top-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
+                <div class="mt-3 px-1 flex items-center justify-between">
+                    <span class="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-wider" id="list-info-text">Tüm Kanallar</span>
+                    <span id="channel-count-badge" class="text-[10px] font-black bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 px-2 py-0.5 rounded-lg"></span>
+                </div>
+            </div>
+
+            <div class="flex-1 lg:overflow-y-auto p-2 custom-scrollbar" id="channel-list"></div>
+
+            <!-- ── ADSENSE REKLAM KUTUSU — Kanal Listesi Altı ── -->
+            <div class="mg-ad-box shrink-0" style="margin: 0 0.5rem 0.5rem; border-radius:12px;" aria-label="Reklam" role="complementary">
+                <span class="mg-ad-label">Reklam</span>
+                <ins class="adsbygoogle"
+                     style="display:block;width:300px;height:250px;"
+                     data-ad-client="ca-pub-1880946354382681"
+                     data-ad-slot="1689789138"
+                     data-ad-format="rectangle"></ins>
+            </div>
+
+        </aside>
+
+    </div>
+
+    <script>
+        // --- 150+ GERÇEK KANAL LİSTESİ ---
+        const channels =[
+            // ULUSAL
+            { id: "trt1", name: "TRT 1", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/TRT_1_logo.svg/512px-TRT_1_logo.svg.png", stream: "https://tv-trt1.medya.trt.com.tr/master.m3u8", site: "https://www.trt1.com.tr/canli-izle" },
+            { id: "atv", name: "ATV", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/tr/archive/8/87/20201017122144%21Atv_logo.png", stream: "https://trkvz-live.ercdn.net/atv/atv.m3u8", site: "https://www.atv.com.tr/webtv/canli-yayin" },
+            { id: "kanald", name: "Kanal D", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/tr/6/62/Kanal_D_logo.png", stream: "https://demiroren-live.ercdn.net/kanald/kanald.m3u8", site: "https://www.kanald.com.tr/canli-yayin" },
+            { id: "star", name: "Star TV", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/Star_TV_logo.svg/512px-Star_TV_logo.svg.png", stream: "https://dogus-live.ercdn.net/startv/startv.m3u8", site: "https://www.startv.com.tr/canli-yayin" },
+            { id: "show", name: "Show TV", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/tr/3/36/Show_TV_logo.png", stream: "https://ciner-live.ercdn.net/showtv/showtv.m3u8", site: "https://www.showtv.com.tr/canli-yayin" },
+            { id: "tv8", name: "TV8", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Tv8_logo.svg/512px-Tv8_logo.svg.png", stream: "https://tv8-live.ercdn.net/tv8/tv8.m3u8", site: "https://www.tv8.com.tr/canli-yayin" },
+            { id: "now", name: "NOW TV", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1e/NOW_T%C3%BCrkiye_logo.svg/512px-NOW_T%C3%BCrkiye_logo.svg.png", stream: "https://fox-live.ercdn.net/fox/fox.m3u8", site: "https://www.nowtv.com.tr/canli-yayin" },
+            { id: "kanal7", name: "Kanal 7", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/tr/archive/6/69/20201017122144%21Kanal_7_logo.png", stream: "https://kanal7-live.ercdn.net/kanal7/kanal7.m3u8", site: "https://www.kanal7.com/canli-yayin" },
+            { id: "tlc", name: "TLC", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/TLC_T%C3%BCrkiye_logo.svg/512px-TLC_T%C3%BCrkiye_logo.svg.png", stream: "https://dogus-live.ercdn.net/tlc/tlc.m3u8", site: "https://www.tlctv.com.tr/canli-izle" },
+            { id: "dmax", name: "DMAX", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/11/DMAX_logo.svg/512px-DMAX_logo.svg.png", stream: "https://dogus-live.ercdn.net/dmax/dmax.m3u8", site: "https://www.dmax.com.tr/canli-izle" },
+            { id: "tv8bucuk", name: "TV8,5", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/tr/1/12/Tv8%2C5_logosu.png", stream: "https://tv8-live.ercdn.net/tv8bucuk/tv8bucuk.m3u8", site: "https://www.tv8bucuk.com/tv8-5-canli-yayin" },
+            { id: "beyaztv", name: "Beyaz TV", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/tr/1/16/Beyaz_TV_logo.png", stream: "https://beyaztv-live.ercdn.net/beyaztv/beyaztv.m3u8", site: "https://beyaztv.com.tr/canli-yayin/" },
+            { id: "360tv", name: "360 TV", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/tr/3/30/360_TV_logo.png", stream: "https://turkmedya-live.ercdn.net/tv360/tv360.m3u8", site: "https://www.tv360.com.tr/canli-yayin" },
+            { id: "teve2", name: "Teve2", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/tr/thumb/8/86/Teve2_logo.svg/512px-Teve2_logo.svg.png", stream: "https://demiroren-live.ercdn.net/teve2/teve2.m3u8", site: "https://www.teve2.com.tr/canli-yayin" },
+            { id: "a2", name: "A2 TV", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/tr/6/66/A2_logosu.png", stream: "https://trkvz-live.ercdn.net/a2tv/a2tv.m3u8", site: "https://www.a2tv.com.tr/webtv/canli-yayin" },
+            { id: "tv4", name: "TV4", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/tr/5/5e/Tv4_Logosu.png", stream: "https://turkmedya-live.ercdn.net/tv4/tv4.m3u8", site: "https://www.tv4.com.tr/canli-yayin" },
+            { id: "trtavaz", name: "TRT Avaz", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/TRT_Avaz_logo.svg/512px-TRT_Avaz_logo.svg.png", stream: "https://tv-trtavaz.medya.trt.com.tr/master.m3u8" },
+            { id: "trtkurdi", name: "TRT Kurdî", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/25/TRT_Kurd%C3%AE_logo.svg/512px-TRT_Kurd%C3%AE_logo.svg.png", stream: "https://tv-trtkurdi.medya.trt.com.tr/master.m3u8" },
+            { id: "flashhaber", name: "Flash Haber", category: "Ulusal", logo: "", stream: "https://flashhaber-live.ercdn.net/flashhaber/flashhaber.m3u8" },
+            { id: "tv100", name: "TV100", category: "Ulusal", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Tv100_Logosu.png/512px-Tv100_Logosu.png", stream: "https://tv100-live.ercdn.net/tv100/tv100.m3u8" },
+
+            // HABER
+            { id: "trthaber", name: "TRT Haber", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/TRT_Haber_logo.svg/512px-TRT_Haber_logo.svg.png", stream: "https://tv-trthaber.medya.trt.com.tr/master.m3u8" },
+            { id: "ntv", name: "NTV", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/91/NTV_logo.svg/512px-NTV_logo.svg.png", stream: "https://dogus-live.ercdn.net/ntv/ntv.m3u8" },
+            { id: "haberturk", name: "Habertürk", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Habert%C3%BCrk_TV_logo.svg/512px-Habert%C3%BCrk_TV_logo.svg.png", stream: "https://ciner-live.ercdn.net/haberturk/haberturk.m3u8" },
+            { id: "cnnturk", name: "CNN Türk", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/CNN_T%C3%BCrk_logo.svg/512px-CNN_T%C3%BCrk_logo.svg.png", stream: "https://demiroren-live.ercdn.net/cnnturk/cnnturk.m3u8" },
+            { id: "ahaber", name: "A Haber", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/tr/thumb/b/be/A_Haber_logo.svg/512px-A_Haber_logo.svg.png", stream: "https://trkvz-live.ercdn.net/ahaber/ahaber.m3u8" },
+            { id: "haberglobal", name: "Haber Global", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Haber_Global_logo.svg/512px-Haber_Global_logo.svg.png", stream: "https://video.haberglobal.com.tr/live/canli/playlist.m3u8" },
+            { id: "tgrthaber", name: "TGRT Haber", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/tr/9/9f/TGRT_Haber_logo.png", stream: "https://tgrthaber.medya.tgrthaber.com.tr/master.m3u8" },
+            { id: "tvnet", name: "TV Net", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/tr/b/be/Tvnet_logosu.png", stream: "https://tvnet-live.ercdn.net/tvnet/tvnet_720p.m3u8" },
+            { id: "24tv", name: "24 TV", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/tr/thumb/1/18/24_TV_logo.svg/512px-24_TV_logo.svg.png", stream: "https://turkmedya-live.ercdn.net/tv24/tv24.m3u8" },
+            { id: "ulketv", name: "Ülke TV", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/tr/thumb/2/2d/%C3%9Clke_TV_logo.svg/512px-%C3%9Clke_TV_logo.svg.png", stream: "https://ulketv-live.ercdn.net/ulketv/ulketv.m3u8" },
+            { id: "halktv", name: "Halk TV", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c2/Halk_TV_logo.svg/512px-Halk_TV_logo.svg.png", stream: "https://halktv-live.ercdn.net/halktv/halktv.m3u8" },
+            { id: "sozcutv", name: "Sözcü TV", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/tr/0/07/S%C3%B6zc%C3%BC_TV_logo.png", stream: "https://sozcutv-live.ercdn.net/sozcutv/sozcutv.m3u8" },
+            { id: "tele1", name: "Tele1", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/tr/8/87/Tele1_logo.png", stream: "https://tele1-live.ercdn.net/tele1/tele1.m3u8" },
+            { id: "krttv", name: "KRT TV", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/f/ff/KRT_TV_Logo.png", stream: "https://krttv-live.ercdn.net/krttv/krttv.m3u8" },
+            { id: "liderhaber", name: "Lider Haber", category: "Haber", logo: "", stream: "https://liderhaber-live.ercdn.net/liderhaber/liderhaber.m3u8" },
+            { id: "bbnturk", name: "BBN Türk", category: "Haber", logo: "", stream: "https://bbnturk-live.ercdn.net/bbnturk/bbnturk.m3u8" },
+            { id: "ulusal", name: "Ulusal Kanal", category: "Haber", logo: "", stream: "https://ulusal-live.ercdn.net/ulusal/ulusal.m3u8" },
+            { id: "benguturk", name: "Bengütürk", category: "Haber", logo: "", stream: "https://benguturk-live.ercdn.net/benguturk/benguturk.m3u8" },
+            { id: "akittv", name: "Akit TV", category: "Haber", logo: "", stream: "https://akittv-live.ercdn.net/akittv/akittv.m3u8" },
+            { id: "bloomberght", name: "Bloomberg HT", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Bloomberg_HT_logo.svg/512px-Bloomberg_HT_logo.svg.png", stream: "https://ciner-live.ercdn.net/bloomberght/bloomberght.m3u8" },
+            { id: "apara", name: "A Para", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/tr/9/91/A_Para_Logosu.png", stream: "https://trkvz-live.ercdn.net/apara/apara.m3u8" },
+            { id: "ekoturk", name: "Ekotürk", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/e/ea/Ekot%C3%BCrk_logo.png", stream: "https://ekoturk-live.ercdn.net/ekoturk/ekoturk.m3u8" },
+            { id: "anews", name: "A News", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/tr/3/36/A_News_logo.png", stream: "https://trkvz-live.ercdn.net/anews/anews.m3u8" },
+            { id: "trtworld", name: "TRT World", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/TRT_World_logo.svg/512px-TRT_World_logo.svg.png", stream: "https://tv-trtworld.medya.trt.com.tr/master.m3u8" },
+            { id: "trtarabi", name: "TRT Arabi", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/TRT_Arabi_logo.svg/512px-TRT_Arabi_logo.svg.png", stream: "https://tv-trtarabi.medya.trt.com.tr/master.m3u8" },
+            { id: "aljazeera", name: "Al Jazeera", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/en/thumb/f/f2/Aljazeera_eng.svg/512px-Aljazeera_eng.svg.png", stream: "https://live-hls-web-aje.getaj.net/AJE/04.m3u8" },
+            { id: "skynews", name: "Sky News", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/Sky_News_logo.svg/512px-Sky_News_logo.svg.png", stream: "https://skynews-live.akamaized.net/hls/live/2002824/skynews-stream1/master.m3u8" },
+            { id: "bbcnews", name: "BBC News", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/BBC_News_2019.svg/512px-BBC_News_2019.svg.png", stream: "https://vs-cmaf-pushb-uk-live.akamaized.net/x=3/i=urn:bbc:pips:service:bbc_news_channel_hd/t=3840/v=pv14/b=5070016/main.m3u8" },
+            { id: "france24", name: "France 24", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/France_24_logo.svg/512px-France_24_logo.svg.png", stream: "https://static.france24.com/live/F24_EN_HI_HLS/live_web.m3u8" },
+            { id: "euronews", name: "Euronews", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Euronews_logo_2016.svg/512px-Euronews_logo_2016.svg.png", stream: "https://euronews-euronews-turk-1-tr.samsung.wurl.tv/playlist.m3u8" },
+            { id: "dwnews", name: "DW News", category: "Haber", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/Deutsche_Welle_logo_2012.svg/512px-Deutsche_Welle_logo_2012.svg.png", stream: "https://dwamdstream102.akamaized.net/hls/live/2015525/eintv/index.m3u8" },
+            { id: "nhkworld", name: "NHK World", category: "Haber", logo: "", stream: "https://nhkwlive-ojp.akamaized.net/hls/live/2003459/11-a/index.m3u8" },
+            { id: "rtnews", name: "RT News", category: "Haber", logo: "", stream: "https://rt-glb.rttv.com/dvr/rtnews/playlist_b4500000.m3u8" },
+
+            // SPOR
+            { id: "trtspor", name: "TRT Spor", category: "Spor", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/TRT_Spor_logo.svg/512px-TRT_Spor_logo.svg.png", stream: "https://tv-trtspor1.medya.trt.com.tr/master.m3u8" },
+            { id: "trtspor2", name: "TRT Spor Yıldız", category: "Spor", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/48/TRT_Spor_Y%C4%B1ld%C4%B1z_logo.svg/512px-TRT_Spor_Y%C4%B1ld%C4%B1z_logo.svg.png", stream: "https://tv-trtspor2.medya.trt.com.tr/master.m3u8" },
+            { id: "aspor", name: "A Spor", category: "Spor", logo: "https://upload.wikimedia.org/wikipedia/tr/1/1a/A_Spor_logosu.png", stream: "https://trkvz-live.ercdn.net/aspor/aspor.m3u8" },
+            { id: "sportstv", name: "Sports TV", category: "Spor", logo: "https://upload.wikimedia.org/wikipedia/tr/5/5a/Sports_tv.png", stream: "https://sportstv-live.ercdn.net/sportstv/sportstv.m3u8" },
+            { id: "fbtv", name: "FB TV", category: "Spor", logo: "https://upload.wikimedia.org/wikipedia/tr/4/45/Fenerbah%C3%A7e_TV_logo.png", stream: "https://fbtv-live.ercdn.net/fbtv/fbtv.m3u8" },
+            { id: "gstv", name: "GS TV", category: "Spor", logo: "https://upload.wikimedia.org/wikipedia/tr/3/30/Galatasaray_TV_logo.png", stream: "https://ciner-live.ercdn.net/gstv/gstv.m3u8" },
+            { id: "tivibuspor", name: "Tivibu Spor", category: "Spor", logo: "https://upload.wikimedia.org/wikipedia/tr/thumb/8/82/Tivibu_Spor_Logo.png/512px-Tivibu_Spor_Logo.png", stream: "https://tivibuspor-live.ercdn.net/tivibuspor/tivibuspor.m3u8" },
+            { id: "beinsportshaber", name: "beIN Sports Haber", category: "Spor", logo: "https://upload.wikimedia.org/wikipedia/tr/3/38/BeIN_Sports_Haber_logosu.png", stream: "https://beinsportshaber-live.ercdn.net/beinsportshaber/beinsportshaber.m3u8", site: "https://beinsports.com.tr/haber/canli-yayin" },
+            { id: "cbcsport", name: "CBC Sport", category: "Spor", logo: "", stream: "https://live.cbcsport.az/cbcsport/index.m3u8" },
+            { id: "idmantv", name: "İdman TV", category: "Spor", logo: "", stream: "https://idmantv-live.ercdn.net/idmantv/idmantv.m3u8" },
+            { id: "redbull", name: "Red Bull TV", category: "Spor", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/Red_Bull_TV_logo.svg/512px-Red_Bull_TV_logo.svg.png", stream: "https://rbmn-live.akamaized.net/hls/live/590314/BoRB-AT/master.m3u8" },
+
+            // BELGESEL
+            { id: "trtbelgesel", name: "TRT Belgesel", category: "Belgesel", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/TRT_Belgesel_logo.svg/512px-TRT_Belgesel_logo.svg.png", stream: "https://tv-trtbelgesel.medya.trt.com.tr/master.m3u8" },
+            { id: "trt2", name: "TRT 2", category: "Belgesel", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/TRT_2_logo.svg/512px-TRT_2_logo.svg.png", stream: "https://tv-trt2.medya.trt.com.tr/master.m3u8" },
+            { id: "trtturk", name: "TRT Türk", category: "Belgesel", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4a/TRT_T%C3%BCrk_logo.svg/512px-TRT_T%C3%BCrk_logo.svg.png", stream: "https://tv-trtturk.medya.trt.com.tr/master.m3u8" },
+            { id: "nasatv", name: "NASA TV", category: "Belgesel", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/NASA_logo.svg/512px-NASA_logo.svg.png", stream: "https://ntv1.akamaized.net/hls/live/2014075/NASA-NTV1-HLS/master.m3u8" },
+            { id: "yabantv", name: "Yaban TV", category: "Belgesel", logo: "https://upload.wikimedia.org/wikipedia/tr/7/77/Yaban_TV_logo.png", stream: "https://yabantv-live.ercdn.net/yabantv/yabantv.m3u8" },
+            { id: "tgrtbelgesel", name: "TGRT Belgesel", category: "Belgesel", logo: "https://upload.wikimedia.org/wikipedia/tr/7/7c/TGRT_Belgesel_logo.png", stream: "https://tgrtbelgesel.medya.tgrthaber.com.tr/master.m3u8" },
+            { id: "cgtn", name: "CGTN Documentary", category: "Belgesel", logo: "", stream: "https://live.cgtn.com/1000/prog_index.m3u8" },
+            { id: "aljazeeradoc", name: "Al Jazeera Doc", category: "Belgesel", logo: "", stream: "https://live-hls-web-ajd.getaj.net/AJD/03.m3u8" },
+
+            // MÜZİK
+            { id: "trtmuzik", name: "TRT Müzik", category: "Müzik", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/TRT_M%C3%BCzik_logo.svg/512px-TRT_M%C3%BCzik_logo.svg.png", stream: "https://tv-trtmuzik.medya.trt.com.tr/master.m3u8" },
+            { id: "kralpop", name: "Kral Pop TV", category: "Müzik", logo: "https://upload.wikimedia.org/wikipedia/tr/3/36/Kral_Pop_TV_Logosu.png", stream: "https://dogus-live.ercdn.net/kralpoptv/kralpoptv.m3u8" },
+            { id: "kraltv", name: "Kral TV", category: "Müzik", logo: "https://upload.wikimedia.org/wikipedia/tr/1/1a/Kral_TV_Logosu.png", stream: "https://dogus-live.ercdn.net/kraltv/kraltv.m3u8" },
+            { id: "powertv", name: "Power TV", category: "Müzik", logo: "https://upload.wikimedia.org/wikipedia/tr/7/7b/Power_TV_logo.png", stream: "https://livetv.powerapp.com.tr/powerTV/powertv.smil/playlist.m3u8" },
+            { id: "powerturk", name: "Power Türk TV", category: "Müzik", logo: "https://upload.wikimedia.org/wikipedia/tr/0/07/Power_T%C3%BCrk_TV_logo.png", stream: "https://livetv.powerapp.com.tr/powerturkTV/powerturktv.smil/playlist.m3u8" },
+            { id: "nr1tv", name: "Number1 TV", category: "Müzik", logo: "https://upload.wikimedia.org/wikipedia/tr/f/fa/Number_One_TV_Logosu.png", stream: "https://b01c02nl.medianova.tv/out/u/number1.m3u8" },
+            { id: "nr1turk", name: "Number1 Türk", category: "Müzik", logo: "https://upload.wikimedia.org/wikipedia/tr/4/4e/Number_One_T%C3%BCrk_TV_Logosu.png", stream: "https://b01c02nl.medianova.tv/out/u/number1turk.m3u8" },
+            { id: "dreamturk", name: "Dream Türk", category: "Müzik", logo: "https://upload.wikimedia.org/wikipedia/tr/a/ab/Dream_T%C3%BCrk_Logosu.png", stream: "https://demiroren-live.ercdn.net/dreamturk/dreamturk.m3u8" },
+            { id: "tatlises", name: "Tatlıses TV", category: "Müzik", logo: "", stream: "https://tatlises-live.ercdn.net/tatlises/tatlises.m3u8" },
+            { id: "vizyonturk", name: "Vizyon Türk", category: "Müzik", logo: "", stream: "https://vizyonturk-live.ercdn.net/vizyonturk/vizyonturk.m3u8" },
+            { id: "fmboy", name: "FMBoy TV", category: "Müzik", logo: "", stream: "https://fmboy-live.ercdn.net/fmboy/fmboy.m3u8" },
+            { id: "nr1dance", name: "Number1 Dance", category: "Müzik", logo: "", stream: "https://b01c02nl.medianova.tv/out/u/n1dance.m3u8" },
+            { id: "nr1slow", name: "Number1 Slow", category: "Müzik", logo: "", stream: "https://b01c02nl.medianova.tv/out/u/n1slow.m3u8" },
+            { id: "tempopop", name: "Tempo Pop", category: "Müzik", logo: "", stream: "https://tempopop-live.ercdn.net/tempopop/tempopop.m3u8" },
+            { id: "arabesk", name: "Arabesk TV", category: "Müzik", logo: "", stream: "https://arabesktv-live.ercdn.net/arabesktv/arabesktv.m3u8" },
+
+            // ÇOCUK
+            { id: "trtcocuk", name: "TRT Çocuk", category: "Çocuk", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/TRT_%C3%87ocuk_logo.svg/512px-TRT_%C3%87ocuk_logo.svg.png", stream: "https://tv-trtcocuk.medya.trt.com.tr/master.m3u8" },
+            { id: "minikacocuk", name: "Minika Çocuk", category: "Çocuk", logo: "https://upload.wikimedia.org/wikipedia/tr/f/fc/Minika_%C3%87OCUK.png", stream: "https://trkvz-live.ercdn.net/minikacocuk/minikacocuk.m3u8" },
+            { id: "minikago", name: "Minika GO", category: "Çocuk", logo: "https://upload.wikimedia.org/wikipedia/tr/7/7b/Minika_GO.png", stream: "https://trkvz-live.ercdn.net/minikago/minikago.m3u8" },
+            { id: "zaroktv", name: "Zarok TV", category: "Çocuk", logo: "https://upload.wikimedia.org/wikipedia/tr/a/a2/Zarok_TV_Logo.png", stream: "https://zaroktv-live.ercdn.net/zaroktv/zaroktv.m3u8" },
+            { id: "cartoonnetwork", name: "Cartoon Network", category: "Çocuk", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Cartoon_Network_2010_logo.svg/512px-Cartoon_Network_2010_logo.svg.png", stream: "https://cartoonnetwork-live.ercdn.net/cartoonnetwork/cartoonnetwork.m3u8" },
+            { id: "trtebailkokul", name: "TRT EBA İlkokul", category: "Çocuk", logo: "", stream: "https://tv-trtebailkokul.medya.trt.com.tr/master.m3u8" },
+            { id: "trtebaortaokul", name: "TRT EBA Ortaokul", category: "Çocuk", logo: "", stream: "https://tv-trtebaortaokul.medya.trt.com.tr/master.m3u8" },
+            { id: "trtebalise", name: "TRT EBA Lise", category: "Çocuk", logo: "", stream: "https://tv-trtebalise.medya.trt.com.tr/master.m3u8" },
+
+            // DİNİ
+            { id: "diyanet", name: "Diyanet TV", category: "Dini", logo: "https://upload.wikimedia.org/wikipedia/tr/4/4e/Diyanet_TV_Logosu.png", stream: "https://tv-diyanettv.medya.trt.com.tr/master.m3u8" },
+            { id: "vavtv", name: "Vav TV", category: "Dini", logo: "https://upload.wikimedia.org/wikipedia/tr/e/ec/Vav_tv_logo.png", stream: "https://trkvz-live.ercdn.net/vavtv/vavtv.m3u8" },
+            { id: "semerkand", name: "Semerkand TV", category: "Dini", logo: "https://upload.wikimedia.org/wikipedia/tr/a/ab/Semerkand_TV_logosu.png", stream: "https://semerkand-live.ercdn.net/semerkand/semerkand.m3u8" },
+            { id: "lalegul", name: "Lalegül TV", category: "Dini", logo: "https://upload.wikimedia.org/wikipedia/tr/b/bb/Laleg%C3%BCl_TV.png", stream: "https://lalegul-live.ercdn.net/lalegul/lalegul.m3u8" },
+            { id: "dosttv", name: "Dost TV", category: "Dini", logo: "", stream: "https://dosttv-live.ercdn.net/dosttv/dosttv.m3u8" },
+            { id: "tv5", name: "TV5", category: "Dini", logo: "https://upload.wikimedia.org/wikipedia/tr/8/87/TV5_%28T%C3%BCrkiye%29_logo.png", stream: "https://tv5-live.ercdn.net/tv5/tv5.m3u8" },
+            { id: "kudustv", name: "Kudüs TV", category: "Dini", logo: "", stream: "https://kudustv-live.ercdn.net/kudustv/kudustv.m3u8" },
+            { id: "rehbertv", name: "Rehber TV", category: "Dini", logo: "", stream: "https://rehbertv-live.ercdn.net/rehbertv/rehbertv.m3u8" },
+            { id: "berattv", name: "Berat TV", category: "Dini", logo: "", stream: "https://berattv-live.ercdn.net/berattv/berattv.m3u8" },
+            { id: "fmtv", name: "FM TV", category: "Dini", logo: "", stream: "https://fmtv-live.ercdn.net/fmtv/fmtv.m3u8" },
+            { id: "hilaltv", name: "Hilal TV", category: "Dini", logo: "", stream: "https://hilaltv-live.ercdn.net/hilaltv/hilaltv.m3u8" },
+            { id: "medinetv", name: "Medine TV", category: "Dini", logo: "", stream: "https://medinetv-live.ercdn.net/medinetv/medinetv.m3u8" },
+
+            // YEREL
+            { id: "caytv", name: "Çay TV", category: "Yerel", logo: "https://upload.wikimedia.org/wikipedia/tr/d/d4/%C3%87ay_TV_Logosu.jpg", stream: "https://caytv-live.ercdn.net/caytv/caytv.m3u8" },
+            { id: "olaytv", name: "Olay TV", category: "Yerel", logo: "", stream: "https://olaytv-live.ercdn.net/olaytv/olaytv.m3u8" },
+            { id: "kanalb", name: "Kanal B", category: "Yerel", logo: "", stream: "https://kanalb-live.ercdn.net/kanalb/kanalb.m3u8" },
+            { id: "vatantv", name: "Vatan TV", category: "Yerel", logo: "", stream: "https://vatantv-live.ercdn.net/vatantv/vatantv.m3u8" },
+            { id: "meltemtv", name: "Meltem TV", category: "Yerel", logo: "", stream: "https://meltemtv-live.ercdn.net/meltemtv/meltemtv.m3u8" },
+            { id: "mesajtv", name: "Mesaj TV", category: "Yerel", logo: "", stream: "https://mesajtv-live.ercdn.net/mesajtv/mesajtv.m3u8" },
+            { id: "kanal33", name: "Kanal 33", category: "Yerel", logo: "", stream: "https://kanal33-live.ercdn.net/kanal33/kanal33.m3u8" },
+            { id: "kadirga", name: "Kadırga TV", category: "Yerel", logo: "", stream: "https://kadirga-live.ercdn.net/kadirga/kadirga.m3u8" },
+            { id: "linetv", name: "Line TV", category: "Yerel", logo: "", stream: "https://linetv-live.ercdn.net/linetv/linetv.m3u8" },
+            { id: "pamukkale", name: "Pamukkale TV", category: "Yerel", logo: "", stream: "https://pamukkale-live.ercdn.net/pamukkale/pamukkale.m3u8" },
+            { id: "bursatv", name: "Bursa TV", category: "Yerel", logo: "", stream: "https://bursatv-live.ercdn.net/bursatv/bursatv.m3u8" },
+            { id: "egetv", name: "Ege TV", category: "Yerel", logo: "", stream: "https://egetv-live.ercdn.net/egetv/egetv.m3u8" },
+            { id: "kanal3", name: "Kanal 3", category: "Yerel", logo: "", stream: "https://kanal3-live.ercdn.net/kanal3/kanal3.m3u8" },
+            { id: "kanal32", name: "Kanal 32", category: "Yerel", logo: "", stream: "https://kanal32-live.ercdn.net/kanal32/kanal32.m3u8" },
+            { id: "kanal26", name: "Kanal 26", category: "Yerel", logo: "", stream: "https://kanal26-live.ercdn.net/kanal26/kanal26.m3u8" },
+            { id: "aksutv", name: "Aksu TV", category: "Yerel", logo: "", stream: "https://aksutv-live.ercdn.net/aksutv/aksutv.m3u8" },
+            { id: "brtv", name: "BRTV", category: "Yerel", logo: "", stream: "https://brtv-live.ercdn.net/brtv/brtv.m3u8" },
+            { id: "edirnetv", name: "Edirne TV", category: "Yerel", logo: "", stream: "https://edirnetv-live.ercdn.net/edirnetv/edirnetv.m3u8" },
+            { id: "tontv", name: "Ton TV", category: "Yerel", logo: "", stream: "https://tontv-live.ercdn.net/tontv/tontv.m3u8" },
+            { id: "altastv", name: "Altaş TV", category: "Yerel", logo: "", stream: "https://altastv-live.ercdn.net/altastv/altastv.m3u8" },
+            { id: "kozatv", name: "Koza TV", category: "Yerel", logo: "", stream: "https://kozatv-live.ercdn.net/kozatv/kozatv.m3u8" },
+            { id: "vtv", name: "VTV", category: "Yerel", logo: "", stream: "https://vtv-live.ercdn.net/vtv/vtv.m3u8" },
+            { id: "ahitv", name: "Ahi TV", category: "Yerel", logo: "", stream: "https://ahitv-live.ercdn.net/ahitv/ahitv.m3u8" },
+            { id: "icanadolu", name: "İç Anadolu TV", category: "Yerel", logo: "", stream: "https://icanadolu-live.ercdn.net/icanadolu/icanadolu.m3u8" },
+            { id: "tvkayseri", name: "TV Kayseri", category: "Yerel", logo: "", stream: "https://tvkayseri-live.ercdn.net/tvkayseri/tvkayseri.m3u8" },
+            { id: "kocaelitv", name: "Kocaeli TV", category: "Yerel", logo: "", stream: "https://kocaelitv-live.ercdn.net/kocaelitv/kocaelitv.m3u8" },
+            { id: "uzayhaber", name: "Uzay Haber", category: "Yerel", logo: "", stream: "https://uzayhaber-live.ercdn.net/uzayhaber/uzayhaber.m3u8" },
+            { id: "srt", name: "SRT", category: "Yerel", logo: "", stream: "https://srt-live.ercdn.net/srt/srt.m3u8" },
+            { id: "tv41", name: "TV 41", category: "Yerel", logo: "", stream: "https://tv41-live.ercdn.net/tv41/tv41.m3u8" },
+            { id: "tv52", name: "TV 52", category: "Yerel", logo: "", stream: "https://tv52-live.ercdn.net/tv52/tv52.m3u8" },
+            { id: "tv264", name: "TV 264", category: "Yerel", logo: "", stream: "https://tv264-live.ercdn.net/tv264/tv264.m3u8" },
+
+            // AZERBAYCAN
+            { id: "aztv", name: "AzTV", category: "Azerbaycan", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/AzTV_logo.svg/512px-AzTV_logo.svg.png", stream: "https://aztv-live.ercdn.net/aztv/aztv.m3u8" },
+            { id: "medeniyyet", name: "Mədəniyyət TV", category: "Azerbaycan", logo: "", stream: "https://medeniyyet-live.ercdn.net/medeniyyet/medeniyyet.m3u8" },
+            { id: "ictimai", name: "İctimai TV", category: "Azerbaycan", logo: "", stream: "https://itv-live.ercdn.net/itv/itv.m3u8" },
+            { id: "xazar", name: "Xəzər TV", category: "Azerbaycan", logo: "", stream: "https://xazar-live.ercdn.net/xazar/xazar.m3u8" },
+            { id: "arb", name: "ARB TV", category: "Azerbaycan", logo: "", stream: "https://arb-live.ercdn.net/arb/arb.m3u8" },
+            { id: "arb24", name: "ARB 24", category: "Azerbaycan", logo: "", stream: "https://arb24-live.ercdn.net/arb24/arb24.m3u8" },
+            { id: "spacetv", name: "Space TV", category: "Azerbaycan", logo: "", stream: "https://spacetv-live.ercdn.net/spacetv/spacetv.m3u8" },
+            { id: "atvaz", name: "ATV (Az)", category: "Azerbaycan", logo: "", stream: "https://atvaz-live.ercdn.net/atvaz/atvaz.m3u8" },
+            { id: "cbctv", name: "CBC TV", category: "Azerbaycan", logo: "", stream: "https://cbctv-live.ercdn.net/cbctv/cbctv.m3u8" },
+            { id: "dunyatv", name: "Dünya TV", category: "Azerbaycan", logo: "", stream: "https://dunyatv-live.ercdn.net/dunyatv/dunyatv.m3u8" }
+        ];
+
+        let currentChannelId = null;
+        let activeCategory = 'Tümü';
+        let searchQuery = '';
+        let favorites = JSON.parse(localStorage.getItem('mugolFavorites')) ||[];
+        
+        let searchTimeout;
+
+        // TEMA YÖNETİMİ
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const themeText = document.getElementById('theme-text');
+
+        function updateThemeUI() {
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('mugolTheme', isDark ? 'dark' : 'light');
+            themeText.textContent = isDark ? 'Açık Tema' : 'Karanlık Tema';
+            themeIcon.innerHTML = isDark 
+                ? `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path>` 
+                : `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>`;
+        }
+        if (localStorage.getItem('mugolTheme') === 'light') document.documentElement.classList.remove('dark');
+        updateThemeUI();
+        themeToggleBtn.addEventListener('click', () => { document.documentElement.classList.toggle('dark'); updateThemeUI(); });
+
+        setInterval(() => { 
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleDateString('tr-TR', { weekday: 'long', day:'numeric', month:'long' }) + ' • ' + now.toLocaleTimeString('tr-TR', {hour: '2-digit', minute:'2-digit'}); 
+        }, 1000);
+
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const icon = type === 'success' ? '✅' : (type === 'error' ? '❌' : 'ℹ️');
+            const bgStyle = type === 'success' ? 'background:#16a34a' : (type === 'error' ? 'background:#dc2626' : 'background:#1f2937');
+            
+            toast.className = `px-5 py-3.5 rounded-2xl shadow-xl font-bold text-sm text-white flex items-center gap-3 animate-slide-up`;
+            toast.setAttribute('style', bgStyle);
+            toast.innerHTML = `<span class="text-lg">${icon}</span> ${message}`;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                toast.style.transition = 'all 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('drawer-backdrop');
+            sidebar.classList.toggle('-translate-x-full');
+            backdrop.classList.toggle('hidden');
+        }
+
+        const CATEGORY_GRADIENTS = [
+            'from-blue-500 to-indigo-600', 'from-rose-500 to-pink-600', 'from-amber-500 to-orange-600',
+            'from-emerald-500 to-teal-600', 'from-violet-500 to-purple-600', 'from-cyan-500 to-blue-600',
+            'from-fuchsia-500 to-pink-600', 'from-lime-500 to-green-600', 'from-red-500 to-rose-600',
+            'from-sky-500 to-cyan-600', 'from-orange-500 to-red-600', 'from-indigo-500 to-violet-600'
+        ];
+
+        function initCategories() {
+            const categories =[...new Set(channels.filter(c => !c.id.startsWith('custom_')).map(c => c.category))];
+            const catList = document.getElementById('category-list');
+            const catGrid = document.getElementById('category-grid');
+            catList.innerHTML = '';
+            if(catGrid) catGrid.innerHTML = '';
+            document.getElementById('fav-count').textContent = favorites.length;
+
+            categories.forEach((cat, idx) => {
+                const count = channels.filter(c => c.category === cat).length;
+                const li = document.createElement('li');
+                li.innerHTML = `
+                    <button onclick="filterCategory('${cat}')" class="w-full flex items-center justify-between px-4 py-2.5 rounded-2xl text-gray-600 dark:text-gray-400 hover:text-brand-600 dark:hover:text-brand-400 hover:bg-gray-100 dark:hover:bg-dark-800 transition-colors font-bold cat-btn" data-cat="${cat}">
+                        <div class="flex items-center gap-3">
+                            <div class="w-1.5 h-1.5 rounded-full bg-current opacity-50"></div>
+                            ${cat}
+                        </div>
+                        <span class="text-[10px] font-black bg-gray-200/50 dark:bg-dark-800 px-2 py-0.5 rounded-lg text-gray-500">${count}</span>
+                    </button>`;
+                catList.appendChild(li);
+
+                if(catGrid) {
+                    const gradient = CATEGORY_GRADIENTS[idx % CATEGORY_GRADIENTS.length];
+                    const card = document.createElement('button');
+                    card.className = "channel-card group relative flex flex-col items-start justify-between p-5 rounded-3xl overflow-hidden text-left bg-white dark:bg-dark-800 shadow-sm h-[130px] sm:h-[150px]";
+                    card.onclick = () => selectCategoryFromGrid(cat);
+                    card.innerHTML = `
+                        <div class="absolute inset-0 bg-gradient-to-br ${gradient} opacity-90 group-hover:opacity-100 transition-opacity"></div>
+                        <div class="relative z-10 flex flex-col h-full justify-between w-full">
+                            <span class="text-[10px] font-black text-white/80 bg-black/20 backdrop-blur px-2 py-0.5 rounded-lg w-fit uppercase tracking-wider">${count} kanal</span>
+                            <span class="text-lg sm:text-xl font-black text-white tracking-tight drop-shadow-sm">${cat}</span>
+                        </div>`;
+                    catGrid.appendChild(card);
+                }
+            });
+
+            if(catGrid && favorites.length > 0) {
+                const favCard = document.createElement('button');
+                favCard.className = "channel-card group relative flex flex-col items-start justify-between p-5 rounded-3xl overflow-hidden text-left bg-white dark:bg-dark-800 shadow-sm h-[130px] sm:h-[150px]";
+                favCard.onclick = () => selectCategoryFromGrid('Favoriler');
+                favCard.innerHTML = `
+                    <div class="absolute inset-0 bg-gradient-to-br from-yellow-400 to-amber-600 opacity-90 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="relative z-10 flex flex-col h-full justify-between w-full">
+                        <span class="text-[10px] font-black text-white/80 bg-black/20 backdrop-blur px-2 py-0.5 rounded-lg w-fit uppercase tracking-wider">${favorites.length} kanal</span>
+                        <span class="text-lg sm:text-xl font-black text-white tracking-tight drop-shadow-sm">⭐ Favorilerim</span>
+                    </div>`;
+                catGrid.insertBefore(favCard, catGrid.firstChild);
+            }
+        }
+
+        // Kategori ekranından seçim yapıldığında: kategoriyi uygula ve yayın alanına geç
+        function selectCategoryFromGrid(cat) {
+            filterCategory(cat, false);
+            showVideoScreen();
+        }
+
+        function showVideoScreen() {
+            // Oynatıcı yok: mobilde kategori ekranı ve üst boşluk kapanır, sadece kanal listesi kalır
+            if(window.innerWidth < 1024) {
+                document.getElementById('category-screen').classList.add('hidden');
+                document.getElementById('main-area').style.display = 'none';
+            }
+        }
+
+        function showCategoryScreen() {
+            document.getElementById('main-area').style.display = '';
+            document.getElementById('category-screen').classList.remove('hidden');
+            initCategories();
+            if(window.innerWidth < 1024) document.getElementById('main-area').scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function filterCategory(cat, closeMobile = true) {
+            activeCategory = cat;
+            document.getElementById('list-info-text').textContent = cat === 'Tümü' ? 'Tüm Kanallar' : (cat === 'Favoriler' ? 'Favorilerim' : cat + ' Kategorisi');
+            
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if(btn.dataset.cat === activeCategory) {
+                    btn.classList.add('bg-brand-50', 'text-brand-600', 'dark:bg-dark-800', 'dark:text-brand-400');
+                    btn.classList.remove('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-100');
+                } else {
+                    btn.classList.remove('bg-brand-50', 'text-brand-600', 'dark:bg-dark-800', 'dark:text-brand-400');
+                    btn.classList.add('text-gray-600', 'dark:text-gray-400', 'hover:bg-gray-100');
+                }
+            });
+            
+            renderChannels(); 
+            showVideoScreen();
+            if(closeMobile && window.innerWidth < 1024 && !document.getElementById('sidebar').classList.contains('-translate-x-full')) toggleMobileSidebar();
+        }
+
+        function toggleFavorite(id, event) {
+            if(event) event.stopPropagation();
+            if(favorites.includes(id)) {
+                favorites = favorites.filter(favId => favId !== id);
+                showToast("Favorilerden çıkarıldı");
+            } else {
+                favorites.push(id);
+                showToast("Favorilere eklendi", "success");
+            }
+            localStorage.setItem('mugolFavorites', JSON.stringify(favorites));
+            document.getElementById('fav-count').textContent = favorites.length;
+            renderChannels(); 
+        }
+
+        function renderChannels() {
+            const listEl = document.getElementById('channel-list');
+            listEl.innerHTML = "";
+            let filtered = channels.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase()) || c.category.toLowerCase().includes(searchQuery.toLowerCase()));
+            if (activeCategory === 'Favoriler') filtered = filtered.filter(c => favorites.includes(c.id));
+            else if (activeCategory !== 'Tümü') filtered = filtered.filter(c => c.category === activeCategory);
+
+            // Mobilde Ana Sayfa'da (Tümü + arama yok) kanal listesi gizlenir
+            const asideEl = document.getElementById('list-info-text').closest('aside');
+            const hideOnHome = window.innerWidth < 1024 && activeCategory === 'Tümü' && !searchQuery.trim();
+            if (asideEl) asideEl.style.display = hideOnHome ? 'none' : '';
+            if (hideOnHome) return;
+
+            const badge = document.getElementById('channel-count-badge');
+            if(badge) badge.textContent = filtered.length + ' kanal';
+
+            if(filtered.length === 0) {
+                listEl.innerHTML = `<div class="text-center mt-10 text-gray-400 font-bold flex flex-col items-center animate-fade-in"><svg class="w-10 h-10 mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><p>Sonuç bulunamadı.</p></div>`;
+                return;
+            }
+
+            filtered.forEach(channel => {
+                const isFav = favorites.includes(channel.id);
+                const isActive = currentChannelId === channel.id;
+                
+                const wrapper = document.createElement('div');
+                wrapper.className = `channel-card relative flex items-center justify-between p-2 rounded-[14px] mb-1.5 cursor-pointer bg-white dark:bg-dark-800 shadow-sm ${isActive ? 'active-channel' : ''}`;
+                wrapper.onclick = () => playChannel(channel.id);
+                
+                const logoHtml = channel.logo 
+                    ? `<img src="${channel.logo}" class="max-w-full max-h-full object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                       <div class="logo-placeholder w-full h-full rounded-lg absolute inset-0" style="display:none">${channel.name.charAt(0)}</div>`
+                    : `<div class="logo-placeholder w-full h-full rounded-lg">${channel.name.charAt(0)}</div>`;
+
+                wrapper.innerHTML = `
+                    <div class="flex-1 flex items-center gap-3 min-w-0 pr-8">
+                        <div class="relative w-11 h-11 rounded-xl flex items-center justify-center p-1 shrink-0 overflow-hidden border border-gray-100 dark:border-gray-700/40" style="background: var(--logo-bg, #f9fafb)">
+                            ${logoHtml}
+                        </div>
+                        <div class="flex-1 min-w-0 text-left">
+                            <div class="font-bold text-sm text-gray-800 dark:text-gray-200 truncate ${isActive ? 'text-brand-600 dark:text-brand-400' : ''}">${channel.name}</div>
+                            <div class="text-[10px] font-semibold text-gray-400 dark:text-gray-500 truncate uppercase tracking-wider mt-0.5">${channel.category}</div>
+                        </div>
+                    </div>
+                    <button class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-lg shrink-0 transition-all hover:scale-125 focus:outline-none z-10 rounded-xl hover:bg-yellow-50 dark:hover:bg-yellow-500/10" onclick="toggleFavorite('${channel.id}', event)" title="Favori">
+                        ${isFav ? '<span class="text-yellow-500 drop-shadow-md">⭐</span>' : '<span class="text-gray-300 dark:text-gray-600 hover:text-yellow-400">☆</span>'}
+                    </button>
+                `;
+                listEl.appendChild(wrapper);
+            });
+        }
+
+        window.addEventListener('resize', () => { clearTimeout(window._rcT); window._rcT = setTimeout(renderChannels, 150); });
+
+        document.getElementById('search').addEventListener('input', (e) => { 
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchQuery = e.target.value; 
+                renderChannels(); 
+            }, 300); 
+        });
+
+        // Kanala basınca resmi sitesi açılır
+        function playChannel(id) {
+            const channel = channels.find(c => c.id === id);
+            if(!channel) return;
+            const siteUrl = channel.site || `https://www.google.com/search?q=${encodeURIComponent(channel.name)}+canli+izle`;
+            window.open(siteUrl, '_blank', 'noopener');
+        }
+
+        initCategories();
+        renderChannels();
+
+        showCategoryScreen();
+
+        // UYGULAMAYI İNDİR (PWA kurulumu)
+        let deferredInstallPrompt = null;
+        const installBtn = document.getElementById('install-btn');
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+        if (isStandalone && installBtn) installBtn.style.display = 'none';
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredInstallPrompt = e;
+        });
+
+        window.addEventListener('appinstalled', () => {
+            deferredInstallPrompt = null;
+            if (installBtn) installBtn.style.display = 'none';
+            showToast('Uygulama yüklendi!', 'success');
+        });
+
+        async function installApp() {
+            if (deferredInstallPrompt) {
+                deferredInstallPrompt.prompt();
+                try { await deferredInstallPrompt.userChoice; } catch (e) {}
+                deferredInstallPrompt = null;
+                return;
+            }
+            const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+            if (isIOS) showToast('Safari\'de Paylaş > "Ana Ekrana Ekle" seçin.', 'info');
+            else showToast('Tarayıcı menüsünden "Uygulamayı yükle / Ana ekrana ekle" seçin.', 'info');
+        }
+
+        // PWA Service Worker kaydı
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW kaydı başarısız:', err));
+            });
+        }
+    </script>
+    <!-- ── Reklam Lazy Push ── -->
+    <script>
+    (function() {
+        function pushAds() {
+            document.querySelectorAll('ins.adsbygoogle').forEach(function(ins) {
+                if (!ins.getAttribute('data-adsbygoogle-status')) {
+                    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch(e) {}
+                }
+            });
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function() { setTimeout(pushAds, 800); });
+        } else {
+            setTimeout(pushAds, 800);
+        }
+    })();
+    </script>
+
+</body>
+</html>
